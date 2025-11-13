@@ -414,7 +414,14 @@ class CardRenderer:
         padding_y = 22
         text_area_width = box[2] - box[0] - padding_x * 2
         text_y = box[1] + padding_y
-        line_height = self.ability_font.size + 6
+        try:
+            ascent, descent = self.ability_font.getmetrics()
+            measured_height = ascent + descent
+        except AttributeError:
+            # Fallback for fonts without metric information (e.g. bitmap default font)
+            measured_height = _measure_text(draw, "Ag", self.ability_font)[1]
+        extra_spacing = 6
+        line_height = measured_height + extra_spacing
         lines: List[str] = []
         for index, ability in enumerate(card.abilities):
             parts = ability.splitlines() or [ability]
