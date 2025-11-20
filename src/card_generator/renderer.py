@@ -14,21 +14,27 @@ except ModuleNotFoundError as exc:  # pragma: no cover - import guard
     ) from exc
 
 from .data_models import Card, CardColor
+from .mana_symbols import ManaSymbolGenerator
 
-CARD_WIDTH = 744
-CARD_HEIGHT = 1039
-OUTER_BORDER = 12
-CARD_CORNER_RADIUS = 46
-INNER_CORNER_RADIUS = 36
-CONTENT_MARGIN = 72
-SECTION_SPACING = 16
-HEADER_RATIO = 0.16
-ART_RATIO = 0.58
-TYPE_RATIO = 0.06
-RULES_RATIO = 0.15
-TITLE_FONT_SIZE = 58
-BODY_FONT_SIZE = 34
-ABILITY_FONT_SIZE = 26
+# MTG card dimensions (2.5" x 3.5" at 300 DPI)
+CARD_WIDTH = 750
+CARD_HEIGHT = 1050
+BLACK_BORDER = 18  # MTG's distinctive black border
+INNER_MARGIN = 22
+NAME_BAR_HEIGHT = 65
+ART_BOX_HEIGHT = 450
+TYPE_BAR_HEIGHT = 58
+TEXT_BOX_HEIGHT = 270
+PT_BOX_SIZE = 70
+FOOTER_HEIGHT = 45
+
+TITLE_FONT_SIZE = 48
+TYPE_FONT_SIZE = 32
+BODY_FONT_SIZE = 28
+ABILITY_FONT_SIZE = 24
+FLAVOR_FONT_SIZE = 20
+LEGAL_FONT_SIZE = 14
+MANA_SYMBOL_SIZE = 45
 
 PaletteDict = Dict[str, Tuple[int, int, int]]
 
@@ -44,90 +50,63 @@ COLOR_NAMES = {
 }
 
 
+# MTG-authentic color palettes - vibrant and saturated
 PALETTES: Dict[str, Dict[str, Tuple[int, int, int] | str]] = {
     "r": {
-        "label": "Ember",
-        "base": (216, 90, 53),
-        "base_dark": (166, 68, 34),
-        "surface": (246, 241, 235),
-        "surface_light": (251, 247, 242),
-        "accent": (240, 150, 86),
-        "accent_dark": (150, 60, 34),
-        "accent_light": (250, 198, 142),
-        "text_on_dark": (255, 242, 234),
-        "text_on_light": (58, 38, 30),
+        "label": "Red",
+        "frame_top": (235, 95, 55),  # Bright orange-red
+        "frame_bottom": (185, 45, 25),  # Deep red
+        "textbox": (252, 242, 230),  # Warm cream
+        "border": (20, 10, 5),  # Very dark brown
+        "text": (0, 0, 0),  # Black text
     },
     "u": {
-        "label": "Frost",
-        "base": (91, 178, 204),
-        "base_dark": (44, 111, 143),
-        "surface": (246, 241, 235),
-        "surface_light": (252, 248, 244),
-        "accent": (132, 196, 220),
-        "accent_dark": (48, 96, 126),
-        "accent_light": (184, 222, 238),
-        "text_on_dark": (236, 248, 255),
-        "text_on_light": (38, 54, 70),
+        "label": "Blue",
+        "frame_top": (25, 150, 225),  # Vibrant blue
+        "frame_bottom": (5, 80, 165),  # Deep blue
+        "textbox": (235, 245, 252),  # Light blue-white
+        "border": (5, 15, 25),  # Very dark blue
+        "text": (0, 0, 0),  # Black text
     },
     "g": {
-        "label": "Verdant",
-        "base": (101, 180, 104),
-        "base_dark": (47, 122, 60),
-        "surface": (246, 241, 235),
-        "surface_light": (251, 247, 242),
-        "accent": (152, 208, 140),
-        "accent_dark": (58, 108, 64),
-        "accent_light": (198, 232, 184),
-        "text_on_dark": (236, 250, 236),
-        "text_on_light": (38, 56, 40),
+        "label": "Green",
+        "frame_top": (30, 180, 75),  # Vibrant green
+        "frame_bottom": (15, 120, 45),  # Forest green
+        "textbox": (240, 248, 238),  # Light green-white
+        "border": (8, 18, 10),  # Very dark green
+        "text": (0, 0, 0),  # Black text
     },
     "w": {
-        "label": "Radiant",
-        "base": (238, 221, 175),
-        "base_dark": (199, 169, 106),
-        "surface": (246, 241, 235),
-        "surface_light": (252, 248, 244),
-        "accent": (226, 198, 136),
-        "accent_dark": (140, 108, 62),
-        "accent_light": (248, 226, 176),
-        "text_on_dark": (64, 46, 26),
-        "text_on_light": (72, 58, 34),
+        "label": "White",
+        "frame_top": (255, 250, 220),  # Warm ivory
+        "frame_bottom": (240, 230, 190),  # Golden cream
+        "textbox": (255, 252, 245),  # Off-white
+        "border": (25, 20, 15),  # Dark brown
+        "text": (0, 0, 0),  # Black text
     },
     "b": {
-        "label": "Void",
-        "base": (138, 92, 168),
-        "base_dark": (90, 57, 122),
-        "surface": (246, 241, 235),
-        "surface_light": (252, 248, 244),
-        "accent": (184, 138, 210),
-        "accent_dark": (82, 54, 108),
-        "accent_light": (214, 176, 232),
-        "text_on_dark": (244, 236, 250),
-        "text_on_light": (48, 36, 68),
+        "label": "Black",
+        "frame_top": (90, 80, 95),  # Purple-gray
+        "frame_bottom": (35, 30, 40),  # Very dark purple
+        "textbox": (225, 220, 218),  # Light gray
+        "border": (10, 8, 12),  # Nearly black
+        "text": (0, 0, 0),  # Black text
     },
     "c": {
-        "label": "Machina",
-        "base": (132, 134, 142),
-        "base_dark": (54, 58, 66),
-        "surface": (238, 240, 244),
-        "surface_light": (246, 248, 252),
-        "accent": (180, 186, 198),
-        "accent_dark": (86, 92, 104),
-        "accent_light": (210, 216, 224),
-        "text_on_dark": (246, 248, 252),
-        "text_on_light": (42, 46, 52),
+        "label": "Colorless",
+        "frame_top": (190, 190, 195),  # Light gray
+        "frame_bottom": (120, 120, 130),  # Medium gray
+        "textbox": (242, 242, 244),  # Very light gray
+        "border": (30, 30, 35),  # Dark gray
+        "text": (0, 0, 0),  # Black text
     },
     "neutral": {
-        "label": "Neutral",
-        "base": (120, 124, 136),
-        "base_dark": (48, 52, 60),
-        "surface": (238, 238, 236),
-        "surface_light": (248, 248, 246),
-        "accent": (176, 180, 188),
-        "accent_dark": (86, 90, 96),
-        "accent_light": (214, 216, 220),
-        "text_on_dark": (246, 248, 252),
-        "text_on_light": (46, 48, 52),
+        "label": "Artifact",
+        "frame_top": (195, 185, 175),  # Tan-gray
+        "frame_bottom": (140, 130, 125),  # Brown-gray
+        "textbox": (245, 240, 238),  # Off-white gray
+        "border": (35, 30, 28),  # Dark brown
+        "text": (0, 0, 0),  # Black text
     },
 }
 
@@ -252,6 +231,8 @@ class RenderSettings:
     title_font_size: int = TITLE_FONT_SIZE
     body_font_size: int = BODY_FONT_SIZE
     ability_font_size: int = ABILITY_FONT_SIZE
+    flavor_font_size: int = FLAVOR_FONT_SIZE
+    legal_font_size: int = LEGAL_FONT_SIZE
 
 
 class CardRenderer:
@@ -263,110 +244,56 @@ class CardRenderer:
         self.body_font = load_font(self.settings.body_font_size)
         self.type_font = load_font(max(int(self.settings.body_font_size * 0.9), 16))
         self.ability_font = load_font(self.settings.ability_font_size)
+        self.flavor_font = load_font(self.settings.flavor_font_size)
+        self.legal_font = load_font(self.settings.legal_font_size)
+        self.mana_generator = ManaSymbolGenerator()
 
     def _create_base_canvas(self, palette: Dict[str, Tuple[int, int, int] | str]) -> Image.Image:
-        base = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), self.settings.background_color)
+        """Create MTG-authentic card base with black border."""
+        # Start with black background (MTG's signature black border)
+        base = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 255))
         draw = ImageDraw.Draw(base)
 
-        # Outer drop shadow to lift the card from the background.
-        card_shadow = Image.new("RGBA", base.size, (0, 0, 0, 0))
-        shadow_draw = ImageDraw.Draw(card_shadow)
-        shadow_offset = (10, 14)
-        shadow_box = (
-            OUTER_BORDER + shadow_offset[0],
-            OUTER_BORDER + shadow_offset[1],
-            CARD_WIDTH - OUTER_BORDER + shadow_offset[0],
-            CARD_HEIGHT - OUTER_BORDER + shadow_offset[1],
-        )
-        shadow_draw.rounded_rectangle(
-            shadow_box,
-            radius=CARD_CORNER_RADIUS,
-            fill=(0, 0, 0, 96),
-        )
-        base.alpha_composite(card_shadow)
-
-        # Dark frame around the card body.
-        draw.rectangle((0, 0, CARD_WIDTH, CARD_HEIGHT), fill=self.settings.border_color)
-
-        outer_box = (
-            OUTER_BORDER,
-            OUTER_BORDER,
-            CARD_WIDTH - OUTER_BORDER,
-            CARD_HEIGHT - OUTER_BORDER,
-        )
-        draw.rounded_rectangle(
-            outer_box,
-            radius=CARD_CORNER_RADIUS,
-            fill=_to_rgba(_darken(palette["base_dark"], 0.25)),
-            outline=_to_rgba(_darken(palette["base_dark"], 0.4)),
-            width=3,
-        )
-
+        # Inner card area (everything inside the black border)
         inner_box = (
-            OUTER_BORDER + 8,
-            OUTER_BORDER + 8,
-            CARD_WIDTH - OUTER_BORDER - 8,
-            CARD_HEIGHT - OUTER_BORDER - 8,
-        )
-        draw.rounded_rectangle(
-            inner_box,
-            radius=INNER_CORNER_RADIUS,
-            fill=_to_rgba(palette["surface"]),
-            outline=_to_rgba(_darken(palette["surface"], 0.18)),
-            width=2,
+            BLACK_BORDER,
+            BLACK_BORDER,
+            CARD_WIDTH - BLACK_BORDER,
+            CARD_HEIGHT - BLACK_BORDER,
         )
 
-        content_box = (
-            CONTENT_MARGIN - 18,
-            CONTENT_MARGIN - 24,
-            CARD_WIDTH - CONTENT_MARGIN + 18,
-            CARD_HEIGHT - CONTENT_MARGIN + 24,
-        )
-        draw.rounded_rectangle(
-            content_box,
-            radius=INNER_CORNER_RADIUS - 4,
-            fill=_to_rgba(palette["surface_light"]),
-            outline=_to_rgba(_darken(palette["surface_light"], 0.22)),
-            width=2,
-        )
+        # Fill with cream/off-white base (typical MTG card color)
+        draw.rectangle(inner_box, fill=(252, 248, 242, 255))
 
         return base
 
     def _calculate_layout(self) -> Dict[str, Tuple[int, int, int, int]]:
-        available_height = CARD_HEIGHT - 2 * CONTENT_MARGIN - SECTION_SPACING * 4
-        header_height = int(available_height * HEADER_RATIO)
-        art_height = int(available_height * ART_RATIO)
-        type_height = int(available_height * TYPE_RATIO)
-        rules_height = int(available_height * RULES_RATIO)
-        footer_height = available_height - (
-            header_height + art_height + type_height + rules_height
-        )
-        footer_height = max(footer_height, 86)
-
+        """Calculate MTG-authentic layout boxes."""
         layout: Dict[str, Tuple[int, int, int, int]] = {}
-        left = CONTENT_MARGIN
-        right = CARD_WIDTH - CONTENT_MARGIN
-        y = CONTENT_MARGIN
 
-        layout["header"] = (left, y, right, y + header_height)
-        y = layout["header"][3] + SECTION_SPACING
+        left = BLACK_BORDER + INNER_MARGIN
+        right = CARD_WIDTH - BLACK_BORDER - INNER_MARGIN
+        y = BLACK_BORDER + INNER_MARGIN
 
-        art_inset = 14
-        layout["art"] = (
-            left + art_inset,
-            y,
-            right - art_inset,
-            y + art_height,
-        )
-        y = layout["art"][3] + SECTION_SPACING
+        # Name bar at top
+        layout["name_bar"] = (left, y, right, y + NAME_BAR_HEIGHT)
+        y += NAME_BAR_HEIGHT + 8
 
-        layout["type"] = (left, y, right, y + type_height)
-        y = layout["type"][3] + SECTION_SPACING
+        # Art box (biggest section)
+        layout["art"] = (left, y, right, y + ART_BOX_HEIGHT)
+        y += ART_BOX_HEIGHT + 8
 
-        layout["rules"] = (left, y, right, y + rules_height)
-        y = layout["rules"][3] + SECTION_SPACING
+        # Type line bar
+        layout["type_bar"] = (left, y, right, y + TYPE_BAR_HEIGHT)
+        y += TYPE_BAR_HEIGHT + 8
 
-        layout["footer"] = (left, y, right, CARD_HEIGHT - CONTENT_MARGIN)
+        # Text box (rules + flavor)
+        layout["text_box"] = (left, y, right, y + TEXT_BOX_HEIGHT)
+        y += TEXT_BOX_HEIGHT + 6
+
+        # Footer (P/T, artist, set info)
+        layout["footer"] = (left, y, right, CARD_HEIGHT - BLACK_BORDER - INNER_MARGIN)
+
         return layout
 
     def render(self, card: Card) -> Image.Image:
@@ -375,10 +302,10 @@ class CardRenderer:
         draw = ImageDraw.Draw(base)
         layout = self._calculate_layout()
 
-        self._draw_header(base, draw, card, layout["header"], palette)
-        self._draw_art_area(base, card, layout["art"], palette)
-        self._draw_type_bar(base, draw, card, layout["type"], palette)
-        self._draw_rules_box(base, draw, card, layout["rules"], palette)
+        self._draw_name_bar(base, draw, card, layout["name_bar"], palette)
+        self._draw_art_box(base, card, layout["art"], palette)
+        self._draw_type_bar(base, draw, card, layout["type_bar"], palette)
+        self._draw_text_box(base, draw, card, layout["text_box"], palette)
         self._draw_footer(base, draw, card, layout["footer"], palette)
         return base
 
@@ -389,7 +316,7 @@ class CardRenderer:
         image.save(destination, format=fmt.upper())
         return destination
 
-    def _draw_header(
+    def _draw_name_bar(
         self,
         base: Image.Image,
         draw: ImageDraw.ImageDraw,
@@ -397,181 +324,104 @@ class CardRenderer:
         box: Tuple[int, int, int, int],
         palette: Dict[str, Tuple[int, int, int] | str],
     ) -> None:
-        radius = 28
-        _apply_panel_shadow(base, box, radius, offset=(0, 5), opacity=60)
-
+        """Draw MTG-authentic name bar with vibrant gradient."""
+        # Draw gradient frame (top to bottom color fade)
         gradient = _create_vertical_gradient(
             (box[2] - box[0], box[3] - box[1]),
-            _darken(palette["base_dark"], 0.05),
-            _lighten(palette["base"], 0.2),
+            palette["frame_top"],
+            palette["frame_bottom"],
         )
-        mask = Image.new("L", gradient.size, 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.rounded_rectangle(
-            (0, 0, gradient.size[0], gradient.size[1]),
-            fill=255,
-            radius=radius,
-        )
-        base.paste(gradient, box[:2], mask)
+        base.paste(gradient, box[:2])
 
-        outline_color = _to_rgba(_darken(palette["base_dark"], 0.3))
-        draw.rounded_rectangle(box, radius=radius, outline=outline_color, width=2)
+        # Draw thin border around name bar
+        draw.rectangle(box, outline=palette["border"], width=2)
 
-        # Inner highlight for depth at the top edge.
-        highlight_color = _to_rgba(_lighten(palette["base"], 0.45), 160)
-        draw.line(
-            [(box[0] + 8, box[1] + 6), (box[2] - 8, box[1] + 6)],
-            fill=highlight_color,
-            width=2,
-        )
-
-        padding = 28
+        # Draw card name (left side, black text)
+        padding = 12
         name_width, name_height = _measure_text(draw, card.name, self.title_font)
-        name_y = box[1] + max((box[3] - box[1] - name_height) // 2 - 2, 0)
+        name_y = box[1] + (box[3] - box[1] - name_height) // 2
         draw.text(
             (box[0] + padding, name_y),
             card.name,
             font=self.title_font,
-            fill=palette["text_on_dark"],
+            fill=(0, 0, 0),  # Black text
         )
 
+        # Render mana symbols (right side)
         mana_text = card.mana_cost.symbols()
         if mana_text:
-            text_width, text_height = _measure_text(draw, mana_text, self.body_font)
-            gem_padding_x = 26
-            gem_padding_y = 10
-            gem_box = (
-                box[2] - padding - text_width - gem_padding_x * 2,
-                box[1] + (box[3] - box[1] - text_height - gem_padding_y * 2) // 2,
-                box[2] - padding,
-                box[1]
-                + (box[3] - box[1] - text_height - gem_padding_y * 2) // 2
-                + text_height
-                + gem_padding_y * 2,
-            )
-            gem_radius = (gem_box[3] - gem_box[1]) // 2
+            symbol_paths = self.mana_generator.get_mana_symbols(mana_text)
+            if symbol_paths:
+                symbol_size = MANA_SYMBOL_SIZE
+                spacing = 3
+                total_width = len(symbol_paths) * symbol_size + (len(symbol_paths) - 1) * spacing
 
-            _apply_panel_shadow(base, gem_box, gem_radius, offset=(2, 4), opacity=80)
+                x_start = box[2] - padding - total_width
+                y_start = box[1] + (box[3] - box[1] - symbol_size) // 2
 
-            gem_gradient = _create_vertical_gradient(
-                (gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]),
-                _darken(palette["accent_dark"], 0.1),
-                _lighten(palette["accent_dark"], 0.25),
-            )
-            mask = Image.new("L", (gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]), 0)
-            mask_draw = ImageDraw.Draw(mask)
-            mask_draw.rounded_rectangle(
-                (0, 0, gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]),
-                radius=gem_radius,
-                fill=255,
-            )
-            base.paste(gem_gradient, gem_box[:2], mask)
+                for i, symbol_path in enumerate(symbol_paths):
+                    try:
+                        symbol_img = Image.open(symbol_path).convert("RGBA")
+                        symbol_img = symbol_img.resize((symbol_size, symbol_size), Image.Resampling.LANCZOS)
+                        x_pos = x_start + i * (symbol_size + spacing)
+                        base.paste(symbol_img, (x_pos, y_start), symbol_img)
+                    except Exception as e:
+                        print(f"Warning: Could not load mana symbol {symbol_path}: {e}")
 
-            gem_outline = _to_rgba(_darken(palette["accent_dark"], 0.35))
-            draw.rounded_rectangle(gem_box, radius=gem_radius, outline=gem_outline, width=2)
-
-            # Inner glow ring
-            inner_glow = ImageDraw.Draw(base)
-            glow_radius = gem_radius - 2
-            glow_box = (
-                gem_box[0] + 2,
-                gem_box[1] + 2,
-                gem_box[2] - 2,
-                gem_box[3] - 2,
-            )
-            inner_glow.rounded_rectangle(
-                glow_box,
-                radius=glow_radius,
-                outline=_to_rgba(_lighten(palette["accent"], 0.4), 120),
-                width=2,
-            )
-
-            text_position = (
-                gem_box[0] + gem_padding_x,
-                gem_box[1] + (gem_box[3] - gem_box[1] - text_height) // 2,
-            )
-            draw.text(
-                text_position,
-                mana_text,
-                font=self.body_font,
-                fill=palette["text_on_dark"],
-            )
-
-    def _draw_art_area(
+    def _draw_art_box(
         self,
         base: Image.Image,
         card: Card,
         box: Tuple[int, int, int, int],
         palette: Dict[str, Tuple[int, int, int] | str],
     ) -> None:
-        radius = 34
-        shadow_offset = 5
-
-        overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        shadow_box = (
-            box[0] + shadow_offset,
-            box[1] + shadow_offset,
-            box[2] + shadow_offset,
-            box[3] + shadow_offset,
-        )
-        overlay_draw.rounded_rectangle(
-            shadow_box,
-            radius=radius,
-            fill=_to_rgba(_darken(palette["base_dark"], 0.25), 80),
-        )
-        base.alpha_composite(overlay)
-
+        """Draw MTG-authentic art box with actual card artwork - NO ROUNDED CORNERS."""
         draw = ImageDraw.Draw(base)
-        frame_outline = _to_rgba(_darken(palette["surface_light"], 0.18))
-        frame_fill = _to_rgba(_lighten(palette["surface"], 0.08))
-        draw.rounded_rectangle(box, radius=radius, fill=frame_fill, outline=frame_outline, width=2)
 
-        inset = 12
-        art_inner = (box[0] + inset, box[1] + inset, box[2] - inset, box[3] - inset)
-        inner_width = art_inner[2] - art_inner[0]
-        inner_height = art_inner[3] - art_inner[1]
-        gradient = _create_vertical_gradient(
-            (inner_width, inner_height),
-            _lighten(palette["accent"], 0.2),
-            _darken(palette["base"], 0.15),
-        )
-        mask = Image.new("L", (inner_width, inner_height), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.rounded_rectangle((0, 0, inner_width, inner_height), radius=radius - inset, fill=255)
-        base.paste(gradient, art_inner[:2], mask)
+        # Draw simple rectangular frame (no rounded corners - MTG style)
+        # Thin frame border
+        frame_border = 3
+        draw.rectangle(box, outline=palette["border"], width=frame_border)
 
-        glow_overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-        glow_draw = ImageDraw.Draw(glow_overlay)
-        glow_box = (
-            art_inner[0] - 2,
-            art_inner[1] - 2,
-            art_inner[2] + 2,
-            art_inner[3] + 2,
+        # Art area inside the frame
+        art_area = (
+            box[0] + frame_border,
+            box[1] + frame_border,
+            box[2] - frame_border,
+            box[3] - frame_border,
         )
-        glow_draw.rounded_rectangle(
-            glow_box,
-            radius=radius - inset + 2,
-            outline=_to_rgba(_lighten(palette["surface_light"], 0.4), 150),
-            width=2,
-        )
-        base.alpha_composite(glow_overlay)
+        art_width = art_area[2] - art_area[0]
+        art_height = art_area[3] - art_area[1]
 
-        watermark_text = card.name.upper()
-        wm_draw = ImageDraw.Draw(base)
-        wm_width, wm_height = _measure_text(wm_draw, watermark_text, self.type_font)
-        if wm_width and wm_height:
-            watermark_overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-            overlay_draw = ImageDraw.Draw(watermark_overlay)
-            text_x = art_inner[0] + (inner_width - wm_width) // 2
-            text_y = art_inner[1] + (inner_height - wm_height) // 2
-            overlay_draw.text(
-                (text_x, text_y),
-                watermark_text,
-                font=self.type_font,
-                fill=_to_rgba(_lighten(palette["base_dark"], 0.3), 40),
-            )
-            base.alpha_composite(watermark_overlay)
+        # Load and display ACTUAL card art (fill entire art box)
+        try:
+            art_img = Image.open(card.art_path).convert("RGB")
+
+            # Crop to fill the art box completely (no letterboxing)
+            art_ratio = art_img.width / art_img.height
+            box_ratio = art_width / art_height
+
+            if art_ratio > box_ratio:
+                # Image is wider - crop width
+                new_width = int(art_img.height * box_ratio)
+                left = (art_img.width - new_width) // 2
+                art_img = art_img.crop((left, 0, left + new_width, art_img.height))
+            else:
+                # Image is taller - crop height
+                new_height = int(art_img.width / box_ratio)
+                top = (art_img.height - new_height) // 2
+                art_img = art_img.crop((0, top, art_img.width, top + new_height))
+
+            # Resize to exact dimensions
+            art_img = art_img.resize((art_width, art_height), Image.Resampling.LANCZOS)
+
+            # Paste directly (no mask, sharp edges like real MTG)
+            base.paste(art_img, art_area[:2])
+
+        except Exception as e:
+            print(f"Warning: Could not load art from {card.art_path}: {e}")
+            # Fallback: solid color based on card color
+            draw.rectangle(art_area, fill=palette["frame_top"])
 
     def _draw_type_bar(
         self,
@@ -581,27 +431,30 @@ class CardRenderer:
         box: Tuple[int, int, int, int],
         palette: Dict[str, Tuple[int, int, int] | str],
     ) -> None:
-        radius = 24
-        _apply_panel_shadow(base, box, radius, offset=(0, 4), opacity=56)
-
-        bar_fill = _to_rgba(_lighten(palette["surface_light"], 0.12))
-        bar_outline = _to_rgba(_darken(palette["surface_light"], 0.24))
-        draw.rounded_rectangle(box, radius=radius, fill=bar_fill, outline=bar_outline, width=2)
-
-        text_width, text_height = _measure_text(draw, card.type_line, self.body_font)
-        padding_x = 22
-        text_position = (
-            box[0] + padding_x,
-            box[1] + (box[3] - box[1] - text_height) // 2,
+        """Draw MTG-authentic type bar."""
+        # Draw gradient background (like name bar but subtler)
+        gradient = _create_vertical_gradient(
+            (box[2] - box[0], box[3] - box[1]),
+            _lighten(palette["frame_top"], 0.15),
+            _lighten(palette["frame_bottom"], 0.15),
         )
+        base.paste(gradient, box[:2])
+
+        # Draw border
+        draw.rectangle(box, outline=palette["border"], width=2)
+
+        # Draw type line text (left side, black)
+        padding = 10
+        text_width, text_height = _measure_text(draw, card.type_line, self.type_font)
+        text_y = box[1] + (box[3] - box[1] - text_height) // 2
         draw.text(
-            text_position,
+            (box[0] + padding, text_y),
             card.type_line,
-            font=self.body_font,
-            fill=_darken(palette["text_on_light"], 0.1),
+            font=self.type_font,
+            fill=(0, 0, 0),
         )
 
-    def _draw_rules_box(
+    def _draw_text_box(
         self,
         base: Image.Image,
         draw: ImageDraw.ImageDraw,
@@ -609,58 +462,78 @@ class CardRenderer:
         box: Tuple[int, int, int, int],
         palette: Dict[str, Tuple[int, int, int] | str],
     ) -> None:
-        radius = 26
-        _apply_panel_shadow(base, box, radius, offset=(0, 6), opacity=48)
+        """Draw MTG-authentic text box with abilities and flavor text."""
+        # Draw cream/textbox background
+        draw.rectangle(box, fill=palette["textbox"])
+        draw.rectangle(box, outline=palette["border"], width=2)
 
-        panel_fill = _to_rgba(_darken(palette["surface_light"], 0.08))
-        panel_outline = _to_rgba(_darken(palette["surface_light"], 0.25))
-        draw.rounded_rectangle(box, radius=radius, fill=panel_fill, outline=panel_outline, width=2)
-
-        padding_x = 24
-        padding_y = 20
+        padding_x = 14
+        padding_y = 12
         text_area_width = box[2] - box[0] - padding_x * 2
         text_y = box[1] + padding_y
 
-        try:
-            ascent, descent = self.ability_font.getmetrics()
-            line_height = int((ascent + descent) * 1.05)
-        except AttributeError:
-            line_height = int(_measure_text(draw, "Ag", self.ability_font)[1] * 1.05)
+        line_height = 28
 
         lines: List[str] = []
+        flavor_line_indices = set()
+
+        # Add abilities
         if card.abilities:
-            for index, ability in enumerate(card.abilities):
+            for ability in card.abilities:
                 ability = ability.strip()
                 if not ability:
                     continue
-                wrapped = _wrap_text(
-                    draw,
-                    ability,
-                    self.ability_font,
-                    text_area_width,
-                    prefix="• ",
-                    subsequent_prefix="  ",
-                )
+                wrapped = _wrap_text(draw, ability, self.ability_font, text_area_width)
                 lines.extend(wrapped)
-                if index < len(card.abilities) - 1:
-                    lines.append("")
-        else:
-            placeholder = "No abilities listed."
-            lines = _wrap_text(draw, placeholder, self.ability_font, text_area_width)
+                lines.append("")  # Space between abilities
 
-        for line in lines:
+        # Add flavor text with separator
+        if card.flavor_text:
+            if card.abilities:
+                lines.append("---")  # Separator marker
+                lines.append("")
+
+            flavor_start = len(lines)
+            flavor_wrapped = _wrap_text(draw, card.flavor_text, self.flavor_font, text_area_width)
+            lines.extend(flavor_wrapped)
+
+            # Mark flavor text line indices
+            for i in range(flavor_start, len(lines)):
+                flavor_line_indices.add(i)
+
+        # Render text
+        for idx, line in enumerate(lines):
             if text_y + line_height > box[3] - padding_y:
                 break
-            if not line:
+
+            if line == "---":
+                # Draw separator line
+                separator_y = text_y + 10
+                draw.line(
+                    [(box[0] + padding_x, separator_y), (box[2] - padding_x, separator_y)],
+                    fill=(120, 120, 120),
+                    width=1
+                )
+                text_y += 20
+            elif line.strip():
+                # Is this flavor text?
+                if idx in flavor_line_indices:
+                    draw.text(
+                        (box[0] + padding_x, text_y),
+                        line,
+                        font=self.flavor_font,
+                        fill=(60, 60, 60),  # Gray italic text
+                    )
+                else:
+                    draw.text(
+                        (box[0] + padding_x, text_y),
+                        line,
+                        font=self.ability_font,
+                        fill=(0, 0, 0),  # Black text
+                    )
+                text_y += line_height
+            else:
                 text_y += line_height // 2
-                continue
-            draw.text(
-                (box[0] + padding_x, text_y),
-                line,
-                font=self.ability_font,
-                fill=_darken(palette["text_on_light"], 0.2),
-            )
-            text_y += line_height
 
     def _draw_footer(
         self,
@@ -670,90 +543,54 @@ class CardRenderer:
         box: Tuple[int, int, int, int],
         palette: Dict[str, Tuple[int, int, int] | str],
     ) -> None:
-        radius = 28
-        _apply_panel_shadow(base, box, radius, offset=(0, 6), opacity=52)
+        """Draw MTG-authentic footer with P/T box and artist/set info."""
+        padding = 10
 
-        footer_fill = _to_rgba(_lighten(palette["surface_light"], 0.14))
-        footer_outline = _to_rgba(_darken(palette["surface_light"], 0.28))
-        draw.rounded_rectangle(box, radius=radius, fill=footer_fill, outline=footer_outline, width=2)
-
-        identity = "".join(sorted(color.value for color in card.color_identity)) or "C"
-        color_key = _resolve_primary_color(card)
-        color_name = COLOR_NAMES.get(color_key, "Neutral")
-        left_text = f"{palette['label']} — {color_name} ({identity})"
-
-        padding = 26
-        text_width, text_height = _measure_text(draw, left_text, self.type_font)
-        center_y = box[1] + (box[3] - box[1]) // 2
-
-        diamond_size = 22
-        diamond_center = (
-            box[0] + padding + diamond_size // 2,
-            center_y,
-        )
-        diamond_points = [
-            (diamond_center[0], diamond_center[1] - diamond_size // 2),
-            (diamond_center[0] + diamond_size // 2, diamond_center[1]),
-            (diamond_center[0], diamond_center[1] + diamond_size // 2),
-            (diamond_center[0] - diamond_size // 2, diamond_center[1]),
-        ]
-        draw.polygon(
-            diamond_points,
-            fill=_to_rgba(palette["accent"]),
-            outline=_to_rgba(_darken(palette["accent"], 0.3)),
-        )
-
-        text_x = diamond_center[0] + diamond_size // 2 + 12
-        text_y = center_y - text_height // 2
+        # Left side: Artist credit
+        artist_text = f"Illus. {card.artist}"
+        text_height = _measure_text(draw, artist_text, self.legal_font)[1]
         draw.text(
-            (text_x, text_y),
-            left_text,
-            font=self.type_font,
-            fill=_darken(palette["text_on_light"], 0.15),
+            (box[0] + padding, box[1] + 4),
+            artist_text,
+            font=self.legal_font,
+            fill=(60, 60, 60),
         )
 
+        # Right side: Set code and collector number
+        set_text = f"{card.set_code} • {card.collector_number}"
+        set_width = _measure_text(draw, set_text, self.legal_font)[0]
+        draw.text(
+            (box[2] - padding - set_width, box[1] + 4),
+            set_text,
+            font=self.legal_font,
+            fill=(60, 60, 60),
+        )
+
+        # Draw P/T box if creature (bottom right)
         if card.power is not None and card.toughness is not None:
-            stats_text = f"{card.power} / {card.toughness}"
+            stats_text = f"{card.power}/{card.toughness}"
             stats_width, stats_height = _measure_text(draw, stats_text, self.body_font)
-            gem_padding_x = 26
-            gem_padding_y = 12
-            gem_box = (
-                box[2] - padding - stats_width - gem_padding_x * 2,
-                box[1] + (box[3] - box[1] - stats_height - gem_padding_y * 2) // 2,
-                box[2] - padding,
-                box[1]
-                + (box[3] - box[1] - stats_height - gem_padding_y * 2) // 2
-                + stats_height
-                + gem_padding_y * 2,
-            )
-            gem_radius = (gem_box[3] - gem_box[1]) // 2
 
-            _apply_panel_shadow(base, gem_box, gem_radius, offset=(2, 5), opacity=72)
-
-            gem_gradient = _create_vertical_gradient(
-                (gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]),
-                _darken(palette["accent_dark"], 0.2),
-                _lighten(palette["accent_dark"], 0.18),
+            # P/T box position (bottom right corner)
+            pt_box_size = PT_BOX_SIZE
+            pt_box = (
+                box[2] - pt_box_size - 8,
+                box[3] - pt_box_size - 8,
+                box[2] - 8,
+                box[3] - 8,
             )
-            mask = Image.new("L", (gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]), 0)
-            mask_draw = ImageDraw.Draw(mask)
-            mask_draw.rounded_rectangle(
-                (0, 0, gem_box[2] - gem_box[0], gem_box[3] - gem_box[1]),
-                radius=gem_radius,
-                fill=255,
-            )
-            base.paste(gem_gradient, gem_box[:2], mask)
 
-            gem_outline = _to_rgba(_darken(palette["accent_dark"], 0.35))
-            draw.rounded_rectangle(gem_box, radius=gem_radius, outline=gem_outline, width=2)
+            # Draw P/T background (subtle frame color)
+            draw.rectangle(pt_box, fill=palette["textbox"])
+            draw.rectangle(pt_box, outline=palette["border"], width=3)
+
+            # Draw P/T text (centered in box)
+            text_x = pt_box[0] + (pt_box_size - stats_width) // 2
+            text_y = pt_box[1] + (pt_box_size - stats_height) // 2
             draw.text(
-                (
-                    gem_box[0] + gem_padding_x,
-                    gem_box[1] + (gem_box[3] - gem_box[1] - stats_height) // 2,
-                ),
+                (text_x, text_y),
                 stats_text,
                 font=self.body_font,
-                fill=palette["text_on_dark"],
-                stroke_width=1,
-                stroke_fill=_darken(palette["accent_dark"], 0.45),
+                fill=(0, 0, 0),
             )
+

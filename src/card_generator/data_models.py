@@ -62,6 +62,10 @@ class Card:
     toughness: Optional[int]
     abilities: List[str]
     art_path: Path
+    flavor_text: Optional[str] = None
+    artist: str = "AI Generated"
+    set_code: str = "AI1"
+    collector_number: str = "001"
 
     def validate(self) -> None:
         """Validate the card fields."""
