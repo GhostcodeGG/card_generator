@@ -2,13 +2,21 @@
 
 A powerful Python tool that creates **AI-generated Magic: The Gathering-style cards** with authentic MTG styling, AI-generated artwork, and intelligent card balancing.
 
-**NEW:** Completely redesigned with MTG-authentic visual styling including:
-- Sharp black borders (18px) matching real MTG cards
-- Vibrant, saturated color palettes
-- Proper card proportions (2.5" × 3.5" ratio)
-- Actual artwork display (no more placeholder gradients)
-- Clean rectangular frames (no rounded corners)
-- Authentic P/T box positioning
+**100% AUTHENTIC MTG VISUALS NOW AVAILABLE!**
+
+Choose your rendering method:
+
+**✨ Template-Based Rendering (100% Authentic - RECOMMENDED)**
+- Uses community blank MTG card templates
+- Overlays your AI-generated content on authentic frames
+- Indistinguishable from real MTG cards
+- Requires one-time template download (see [TEMPLATE_SETUP.md](TEMPLATE_SETUP.md))
+
+**⚡ Programmatic Rendering (85% Authentic - Built-in)**
+- No downloads required, works immediately
+- Sharp black borders, vibrant colors, proper proportions
+- Actual artwork display (no placeholder gradients)
+- Great for quick generation and testing
 
 ## Features
 
